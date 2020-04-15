@@ -2,6 +2,10 @@
 /out
 /output.apk
 /app-debug.apk
+/extracted_apk
+/smali
+/proxy_smali
+/smali_out
 
 *.dex
 

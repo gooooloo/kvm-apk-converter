@@ -19,7 +19,6 @@ dependencies {
     compile group: 'org.smali', name: 'smali', version: '2.2.2'
     compile group: 'org.smali', name: 'dexlib2', version: '2.2.2' // 2.2.3 not ok
 
-
     compile group: 'javassist', name: 'javassist', version: '3.12.1.GA'
 
     compile 'org.apache.commons:commons-compress:1.20'

@@ -7,8 +7,7 @@ import javassist.expr.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarOutputStream;
@@ -21,7 +20,7 @@ public class JavaAssistInsertImpl {
     private static boolean isForceInsertLambda = false;
     private static boolean isExceptMethodLevel = false;
     private static String[] exceptMethodList = {};
-    private static boolean isHotfixMethodLevel = true;
+    private static boolean isHotfixMethodLevel = false;
     private static String[] hotfixMethodList = {"test"};
     private static AtomicInteger insertMethodCount = new AtomicInteger(0);
     @SuppressWarnings("SpellCheckingInspection")
@@ -183,10 +182,12 @@ public class JavaAssistInsertImpl {
         }
     }
 
-    public static void replaceMethodCode(List<CtClass> box, File jarFile) throws CannotCompileException, IOException, NotFoundException {
+    public static List<String> replaceMethodCode(List<CtClass> box, File jarFile) throws CannotCompileException, IOException, NotFoundException {
+        List<String> modifiedClasses = new ArrayList<>();
         ZipOutputStream outStream = new JarOutputStream(new FileOutputStream(jarFile));
 //        new ForkJoinPool().submit {
         for (CtClass ctClass : box) {
+            boolean classModified = false;
             if (isNeedInsertClass(ctClass.getName())) {
                 //change class modifier
                 ctClass.setModifiers(AccessFlag.setPublic(ctClass.getModifiers()));
@@ -232,6 +233,7 @@ public class JavaAssistInsertImpl {
                             //finish the insert-code body ,let`s insert it
                             body = "{\n" + body + "\n}";
                             ctBehavior.setBody(body);
+                            classModified = true;
                         }
                     } catch (Exception t) {
                         //here we ignore the error
@@ -241,11 +243,15 @@ public class JavaAssistInsertImpl {
                     }
                 }
             }
-            //zip the inserted-classes into output file
+            // zip the inserted-classes into output file
             zipFile(ctClass.toBytecode(), outStream, ctClass.getName().replaceAll("\\.", "/") + ".class");
+            if (classModified) {
+                modifiedClasses.add(ctClass.getName());
+            }
         }
 //        }.get()
         outStream.close();
+        return modifiedClasses;
     }
 
     private static String getParametersClassType(CtMethod method) throws NotFoundException {

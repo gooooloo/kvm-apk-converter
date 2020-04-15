@@ -1,10 +1,8 @@
 package eggfly.kvm.converter
 
-import com.googlecode.dex2jar.tools.Dex2jarCmd
 import eggfly.kvm.converter.util.ClassUtils
 import javassist.ClassPool
 import javassist.CtClass
-import javassist.CtMethod
 import javassist.CtNewMethod
 import org.apache.commons.io.FileUtils
 import org.jf.dexlib2.AccessFlags
