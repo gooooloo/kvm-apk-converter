@@ -5,7 +5,7 @@ object JavaAssistCodeGen {
     @Suppress("SpellCheckingInspection")
     private const val INVOKE = "eggfly.kvm.core.VMProxy.invoke"
 
-    fun getReturnStatement(returnTypeString: String, className: String, isStatic: Boolean, methodName: String, parametersClassType: String): String? {
+    fun getInvokeAndReturnStatement(returnTypeString: String, className: String, isStatic: Boolean, methodName: String, parametersClassType: String): String? {
         return when (returnTypeString) {
             Constants.CONSTRUCTOR -> "$INVOKE(\"$className\", \"$methodName\", $parametersClassType, $isStatic, argThis, \$args);"
             Constants.LANG_VOID -> "$INVOKE(\"$className\", \"$methodName\", $parametersClassType, $isStatic, argThis, \$args); return null;"

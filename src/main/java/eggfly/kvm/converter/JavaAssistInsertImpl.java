@@ -1,5 +1,6 @@
 package eggfly.kvm.converter;
 
+import eggfly.kvm.converter.util.ClassUtils;
 import javassist.*;
 import javassist.bytecode.AccessFlag;
 import javassist.expr.*;
@@ -18,7 +19,7 @@ public class JavaAssistInsertImpl {
     private static final boolean isForceInsertLambda = false;
     private static final boolean isExceptMethodLevel = false;
     private static String[] exceptMethodList = {};
-    private static final boolean isHotfixMethodLevel = false;
+    private static final boolean isHotfixMethodLevel = true;
     private static String[] hotfixMethodList = {"test"};
     @SuppressWarnings("SpellCheckingInspection")
     private static String[] hotfixPackageList = {"eggfly.kvm.demo"};
@@ -227,7 +228,9 @@ public class JavaAssistInsertImpl {
 ////                                body += "if (com.meituan.robust.PatchProxy.isSupport(\$args, argThis, ${Constants.INSERT_FIELD_NAME}, $isStatic, " + methodMap.get(ctBehavior.longName) + ",${parametersClassType},${returnTypeString}.class)) {"
 //                            body += "if (com.meituan.robust.PatchProxy.isSupport($args, argThis, " + Constants.INSERT_FIELD_NAME + ", " + isStatic +
 //                                    ", " + methodMap.get(ctBehavior.getLongName()) + "," + parametersClassType + "," + returnTypeString + ".class)) {";
-                            body += JavaAssistCodeGen.INSTANCE.getReturnStatement(returnTypeString, ctClass.getName(), isStatic, ctMethod.getName(), parametersClassType);
+                            body += JavaAssistCodeGen.INSTANCE.getInvokeAndReturnStatement(returnTypeString,
+                                    ClassUtils.INSTANCE.convertCanonicalNameToSignature(ctClass.getName()),
+                                    isStatic, ctMethod.getName(), parametersClassType);
                             //finish the insert-code body ,let`s insert it
                             body = "{\n" + body + "\n}";
                             ctBehavior.setBody(body);

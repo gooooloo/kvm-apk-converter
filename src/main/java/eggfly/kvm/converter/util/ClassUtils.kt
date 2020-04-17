@@ -7,4 +7,6 @@ object ClassUtils {
             else -> throw NotImplementedError(signature)
         }
     }
+
+    fun convertCanonicalNameToSignature(name: String): String = "L" + name.replace('.', '/') + ";"
 }

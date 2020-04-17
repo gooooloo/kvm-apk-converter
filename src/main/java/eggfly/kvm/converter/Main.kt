@@ -73,7 +73,7 @@ class Main {
                 val oldSmaliFile = File(smaliOutDir, classSmaliPath)
                 val newSmaliFile = File(proxySmaliDir, classSmaliPath)
                 if (oldSmaliFile.exists() && newSmaliFile.exists()) {
-                    println("replace $oldSmaliFile with $newSmaliFile")
+                    // println("replace $oldSmaliFile with $newSmaliFile")
                     val newSmaliText = findAndReplaceMethods(oldSmaliFile, newSmaliFile, methods)
                     FileUtils.writeStringToFile(oldSmaliFile, newSmaliText, StandardCharsets.UTF_8)
                 } else {
@@ -94,12 +94,13 @@ class Main {
             val originClasses = File(extractedApkDir, "classes.dex")
             ZipUtils.replaceSingleFileIntoZip(outputApk.absolutePath, originClasses.absolutePath, codeFileInAsset)
 
-            stepPrintln("去掉apk中的签名: $outputApk")
+            stepPrintln("去掉apk中的签名: $outputApk (size: ${outputApk.length()})")
             ZipUtils.removeSignature(outputApk.absolutePath)
-//            @Suppress("SpellCheckingInspection")
-//            Runtime.getRuntime().exec("jarsigner -keystore ~/.android/debug.keystore -storepass android ${outputApk.name} androiddebugkey")
+            stepPrintln("用~/.android/debug.keystore重新签名: $outputApk (size: ${outputApk.length()})")
+            @Suppress("SpellCheckingInspection")
+            Runtime.getRuntime().exec("jarsigner -keystore /Users/eggfly/.android/debug.keystore -storepass android ${outputApk.name} androiddebugkey")
 
-            println("All progress done, the apk $srcApk was repackaged to $outputApk")
+            println("All progress done, the apk $srcApk was repackaged to $outputApk (origin size: ${backupApk.length()}, output size: ${outputApk.length()})")
         }
 
         @Suppress("SpellCheckingInspection")
@@ -127,10 +128,10 @@ class Main {
             val leftPart = smali.substring(startOffset)
             val endMethodStr = ".end method"
             val endOffset = leftPart.indexOf(endMethodStr)
-            return leftPart.substring(0, endOffset + endMethodStr.length);
+            return leftPart.substring(0, endOffset + endMethodStr.length)
         }
 
-        var stepCount = 0
+        private var stepCount = 0
         private fun stepPrintln(step: String) {
             stepCount++
             println("第${stepCount}步 -> $step")
