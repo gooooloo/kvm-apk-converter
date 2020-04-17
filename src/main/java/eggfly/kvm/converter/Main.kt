@@ -5,10 +5,12 @@ import eggfly.kvm.converter.JavaAssistInsertImpl.replaceMethodCode
 import javassist.ClassPool
 import org.apache.commons.io.FileUtils
 import java.io.File
+import java.nio.charset.StandardCharsets
+
 
 class Main {
     companion object {
-        private const val Dex2JarCache = true
+        private const val Dex2JarCache = false
 
         @JvmStatic
         fun main(args: Array<String>) {
@@ -55,7 +57,7 @@ class Main {
             }
 
             stepPrintln("用javassist从classes.jar中查找函数,将实现删除并替换成VMProxy.invoke(...): $proxyJar")
-            val modifiedClasses = replaceMethodCode(classes, proxyJar)
+            val modifiedClassesAndMethods = replaceMethodCode(classes, proxyJar)
 
             val proxyDex = "proxy_classes.dex"
             stepPrintln("用dx将proxy_classes.jar编译成proxy_classes.dex: $proxyDex")
@@ -66,25 +68,31 @@ class Main {
             org.jf.baksmali.Main.main(arrayOf("disassemble", "--output", proxySmaliDir, proxyDex))
 
             stepPrintln("替换带有proxy的类的smali文件,合并到之前的smali目录: $smaliOutDir")
-            modifiedClasses.forEach { className ->
+            modifiedClassesAndMethods.forEach { (className, methods) ->
                 val classSmaliPath = className.replace('.', '/') + ".smali"
                 val oldSmaliFile = File(smaliOutDir, classSmaliPath)
                 val newSmaliFile = File(proxySmaliDir, classSmaliPath)
                 if (oldSmaliFile.exists() && newSmaliFile.exists()) {
                     println("replace $oldSmaliFile with $newSmaliFile")
-                    newSmaliFile.copyTo(oldSmaliFile, true)
+                    val newSmaliText = findAndReplaceMethods(oldSmaliFile, newSmaliFile, methods)
+                    FileUtils.writeStringToFile(oldSmaliFile, newSmaliText, StandardCharsets.UTF_8)
                 } else {
-                    throw IllegalStateException("??")
+                    throw IllegalStateException("not exist?")
                 }
             }
 
-            val newClassesDex = "classes.dex"
+            val newClassesDex = "new_classes.dex"
             stepPrintln("用smali将smali目录重新编译到classes.dex: $newClassesDex")
             org.jf.smali.Main.main(arrayOf("assemble", "--output", newClassesDex, smaliOutDir))
 
             val dexPath = File(newClassesDex).absolutePath
             stepPrintln("把new_classes.dex复制到apk中，作为classes.dex: $outputApk")
-            ZipUtils.replaceSingleFileIntoZip(outputApk.absolutePath, dexPath)
+            ZipUtils.replaceSingleFileIntoZip(outputApk.absolutePath, dexPath, "classes.dex")
+
+            val codeFileInAsset = "assets/code.dex"
+            stepPrintln("把code拷贝到apk的assets中: $codeFileInAsset")
+            val originClasses = File(extractedApkDir, "classes.dex")
+            ZipUtils.replaceSingleFileIntoZip(outputApk.absolutePath, originClasses.absolutePath, codeFileInAsset)
 
             stepPrintln("去掉apk中的签名: $outputApk")
             ZipUtils.removeSignature(outputApk.absolutePath)
@@ -92,6 +100,34 @@ class Main {
 //            Runtime.getRuntime().exec("jarsigner -keystore ~/.android/debug.keystore -storepass android ${outputApk.name} androiddebugkey")
 
             println("All progress done, the apk $srcApk was repackaged to $outputApk")
+        }
+
+        @Suppress("SpellCheckingInspection")
+        private fun findAndReplaceMethods(oldSmaliFile: File, newSmaliFile: File, methods: List<String>): String {
+            var oldSmaliText = FileUtils.readFileToString(oldSmaliFile, StandardCharsets.UTF_8)
+            val newSmaliText = FileUtils.readFileToString(newSmaliFile, StandardCharsets.UTF_8)
+            methods.forEach { method ->
+                val oldMethodSection = findMethodSection(oldSmaliText, method)
+                val newMethodSection = findMethodSection(newSmaliText, method)
+                if (oldMethodSection.isEmpty() || newMethodSection.isEmpty()) {
+                    throw RuntimeException("parse error")
+                } else {
+                    oldSmaliText = oldSmaliText.replaceFirst(oldMethodSection, newMethodSection)
+                }
+            }
+            return oldSmaliText
+        }
+
+        @Suppress("SpellCheckingInspection")
+        private fun findMethodSection(smali: String, method: String): String {
+            val startOffset = smali.indexOf(".method $method")
+            if (startOffset < 0) {
+                throw RuntimeException("parse error")
+            }
+            val leftPart = smali.substring(startOffset)
+            val endMethodStr = ".end method"
+            val endOffset = leftPart.indexOf(endMethodStr)
+            return leftPart.substring(0, endOffset + endMethodStr.length);
         }
 
         var stepCount = 0

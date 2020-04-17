@@ -6,12 +6,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class ZipUtils {
-    public static void replaceSingleFileIntoZip(String zip, String file) throws IOException {
+    public static void replaceSingleFileIntoZip(String zip, String file, String filePathInZip) throws IOException {
         Path myFilePath = Paths.get(file);
         Path zipFilePath = Paths.get(zip);
-        String name = new File(file).getName();
         try (FileSystem fs = FileSystems.newFileSystem(zipFilePath, null)) {
-            Path fileInsideZipPath = fs.getPath("/" + name);
+            Path fileInsideZipPath = fs.getPath("/" + filePathInZip);
+            Path parentDir = fileInsideZipPath.getParent();
+            if (!Files.exists(parentDir)) {
+                Files.createDirectories(parentDir);
+            }
             Files.copy(myFilePath, fileInsideZipPath, StandardCopyOption.REPLACE_EXISTING);
         }
     }

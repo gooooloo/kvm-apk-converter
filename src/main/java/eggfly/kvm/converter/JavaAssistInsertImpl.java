@@ -7,9 +7,7 @@ import javassist.expr.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -17,16 +15,15 @@ import java.util.zip.ZipOutputStream;
 public class JavaAssistInsertImpl {
 
     private static String[] exceptPackageList = {"android", "androidx", "kotlin"};
-    private static boolean isForceInsertLambda = false;
-    private static boolean isExceptMethodLevel = false;
+    private static final boolean isForceInsertLambda = false;
+    private static final boolean isExceptMethodLevel = false;
     private static String[] exceptMethodList = {};
-    private static boolean isHotfixMethodLevel = false;
+    private static final boolean isHotfixMethodLevel = false;
     private static String[] hotfixMethodList = {"test"};
-    private static AtomicInteger insertMethodCount = new AtomicInteger(0);
     @SuppressWarnings("SpellCheckingInspection")
     private static String[] hotfixPackageList = {"eggfly.kvm.demo"};
 
-    protected static boolean isNeedInsertClass(String className) {
+    private static boolean isNeedInsertClass(String className) {
         //这样可以在需要埋点的剔除指定的类
         for (String exceptName : exceptPackageList) {
             if (className.startsWith(exceptName)) {
@@ -146,10 +143,11 @@ public class JavaAssistInsertImpl {
             if (AccessFlag.isPackage(it.getModifiers())) {
                 it.setModifiers(AccessFlag.setPublic(it.getModifiers()));
             }
-            boolean flag = isMethodWithExpression((CtMethod) it);
-            if (!flag) {
-                return false;
-            }
+            // TODO
+//            boolean flag = isMethodWithExpression((CtMethod) it);
+//            if (!flag) {
+//                return false;
+//            }
         }
         //方法过滤
         if (isExceptMethodLevel && exceptMethodList != null) {
@@ -182,12 +180,13 @@ public class JavaAssistInsertImpl {
         }
     }
 
-    public static List<String> replaceMethodCode(List<CtClass> box, File jarFile) throws CannotCompileException, IOException, NotFoundException {
-        List<String> modifiedClasses = new ArrayList<>();
+    public static Map<String, List<String>> replaceMethodCode(List<CtClass> box, File jarFile) throws CannotCompileException, IOException, NotFoundException {
+        HashMap<String, List<String>> modifiedClassesAndMethods = new HashMap<>();
         ZipOutputStream outStream = new JarOutputStream(new FileOutputStream(jarFile));
 //        new ForkJoinPool().submit {
         for (CtClass ctClass : box) {
             boolean classModified = false;
+            List<String> modifiedMethods = new ArrayList<>();
             if (isNeedInsertClass(ctClass.getName())) {
                 //change class modifier
                 ctClass.setModifiers(AccessFlag.setPublic(ctClass.getModifiers()));
@@ -196,7 +195,6 @@ public class JavaAssistInsertImpl {
                     zipFile(ctClass.toBytecode(), outStream, ctClass.getName().replaceAll("\\.", "/") + ".class");
                     continue;
                 }
-
                 boolean addIncrementalChange = false;
                 for (CtBehavior ctBehavior : ctClass.getDeclaredBehaviors()) {
 //                    if (!addIncrementalChange) {
@@ -233,6 +231,7 @@ public class JavaAssistInsertImpl {
                             //finish the insert-code body ,let`s insert it
                             body = "{\n" + body + "\n}";
                             ctBehavior.setBody(body);
+                            modifiedMethods.add(getSmaliLine(ctMethod));
                             classModified = true;
                         }
                     } catch (Exception t) {
@@ -246,22 +245,31 @@ public class JavaAssistInsertImpl {
             // zip the inserted-classes into output file
             zipFile(ctClass.toBytecode(), outStream, ctClass.getName().replaceAll("\\.", "/") + ".class");
             if (classModified) {
-                modifiedClasses.add(ctClass.getName());
+                modifiedClassesAndMethods.put(ctClass.getName(), modifiedMethods);
             }
         }
 //        }.get()
         outStream.close();
-        return modifiedClasses;
+        return modifiedClassesAndMethods;
+    }
+
+    @SuppressWarnings("SpellCheckingInspection")
+    private static String getSmaliLine(CtMethod ctMethod) {
+        return Modifier.toString(ctMethod.getModifiers()) +
+                ' ' +
+                ctMethod.getName() +
+                ctMethod.getSignature();
     }
 
     private static String getParametersClassType(CtMethod method) throws NotFoundException {
         if (method.getParameterTypes().length == 0) {
-            return " null ";
+            // TODO MODIFIED
+            return " new Class[0]";
         }
         StringBuilder parameterType = new StringBuilder();
         parameterType.append("new Class[]{");
-        for (CtClass paramterClass : method.getParameterTypes()) {
-            parameterType.append(paramterClass.getName()).append(".class,");
+        for (CtClass parameterClass : method.getParameterTypes()) {
+            parameterType.append(parameterClass.getName()).append(".class,");
         }
         //remove last ','
         if (',' == parameterType.charAt(parameterType.length() - 1))
