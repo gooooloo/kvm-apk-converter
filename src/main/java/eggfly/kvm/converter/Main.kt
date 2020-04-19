@@ -104,7 +104,7 @@ class Main {
             ZipUtils.removeSignature(outputApk.path)
             stepPrintln("用~/.android/debug.keystore重新签名: $outputApk (size: ${outputApk.length()})")
             @Suppress("SpellCheckingInspection")
-            Runtime.getRuntime().exec("jarsigner -keystore /Users/eggfly/.android/debug.keystore -storepass android ${outputApk.name} androiddebugkey")
+            Runtime.getRuntime().exec("jarsigner -keystore /Users/eggfly/.android/debug.keystore -storepass android ${outputApk.path} androiddebugkey")
 
             println("All progress done, the apk $srcApk was repackaged to $outputApk (origin size: ${backupApk.length()}, output size: ${outputApk.length()})")
         }
