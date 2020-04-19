@@ -17,9 +17,9 @@ public class JavaAssistInsertImpl {
 
     private static String[] exceptPackageList = {"android", "androidx", "kotlin"};
     private static final boolean isForceInsertLambda = false;
-    private static final boolean isExceptMethodLevel = false;
-    private static String[] exceptMethodList = {};
-    private static final boolean isHotfixMethodLevel = true;
+    private static final boolean isExceptMethodLevel = true;
+    private static String[] exceptMethodList = {"attachBaseContext"};
+    private static final boolean isHotfixMethodLevel = false;
     private static String[] hotfixMethodList = {"test"};
     @SuppressWarnings("SpellCheckingInspection")
     private static String[] hotfixPackageList = {"eggfly.kvm.demo"};
