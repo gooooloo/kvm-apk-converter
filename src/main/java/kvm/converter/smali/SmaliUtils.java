@@ -1,6 +1,5 @@
-package eggfly.kvm.converter.smali;
+package kvm.converter.smali;
 
-import org.jf.dexlib2.writer.DexWriter;
 import org.jf.dexlib2.writer.builder.BuilderClassDef;
 
 import java.util.List;

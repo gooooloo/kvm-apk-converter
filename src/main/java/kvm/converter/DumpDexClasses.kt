@@ -1,6 +1,6 @@
-package eggfly.kvm.converter
+package kvm.converter
 
-import eggfly.kvm.converter.util.ClassUtils
+import kvm.converter.util.ClassUtils
 import javassist.ClassPool
 import javassist.CtClass
 import javassist.CtNewMethod

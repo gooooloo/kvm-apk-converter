@@ -1,4 +1,4 @@
-package eggfly.kvm.converter.smali;
+package kvm.converter.smali;
 
 import com.google.common.base.Charsets;
 import org.antlr.runtime.CommonTokenStream;

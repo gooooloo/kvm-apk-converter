@@ -1,9 +1,9 @@
-package eggfly.kvm.converter
+package kvm.converter
 
 object JavaAssistCodeGen {
 
     @Suppress("SpellCheckingInspection")
-    private const val INVOKE = "eggfly.kvm.core.VMProxy.invoke"
+    private const val INVOKE = "kvm.core.VMProxy.invoke"
 
     fun getInvokeAndReturnStatement(returnTypeString: String, className: String, isStatic: Boolean, methodName: String, parametersClassType: String): String? {
         return when (returnTypeString) {

@@ -1,4 +1,4 @@
-package eggfly.kvm.converter.util
+package kvm.converter.util
 
 object ClassUtils {
     fun convertSignatureToCanonicalName(signature: String): String {

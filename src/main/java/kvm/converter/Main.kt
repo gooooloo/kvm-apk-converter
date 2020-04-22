@@ -1,10 +1,11 @@
-package eggfly.kvm.converter
+package kvm.converter
 
 import com.googlecode.dex2jar.tools.Dex2jarCmd
-import eggfly.kvm.converter.JavaAssistInsertImpl.replaceMethodCode
+import kvm.converter.JavaAssistInsertImpl.replaceMethodCode
 import javassist.ClassPool
 import org.apache.commons.io.FileUtils
 import java.io.File
+import java.lang.Exception
 import java.lang.StringBuilder
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -53,7 +54,7 @@ class Main {
             val classNames = JarUtils.getAllClasses(jarFile.path)
             val pool = ClassPool.getDefault()
             pool.insertClassPath(jarFile.path)
-            pool.insertClassPath("android-28/android.jar")
+            pool.insertClassPath("android-29/android.jar")
             val classes = classNames.map { pool.get(it) }
             val proxyJar = File(outputTempDir, "proxy_classes.jar")
 
@@ -77,10 +78,10 @@ class Main {
                 val newSmaliFile = File(proxySmaliDir, classSmaliPath)
                 if (oldSmaliFile.exists() && newSmaliFile.exists()) {
                     // println("replace $oldSmaliFile with $newSmaliFile")
-                    val newSmaliText = findAndReplaceMethods(oldSmaliFile, newSmaliFile, methods)
-                    FileUtils.writeStringToFile(oldSmaliFile, newSmaliText, StandardCharsets.UTF_8)
-                    methods.forEach { method ->
-                        builder.append(classSmaliPath).append("->").append(method).append('\n')
+                    val replacementResult = findAndReplaceMethods(oldSmaliFile, newSmaliFile, methods)
+                    replacementResult.forEach { method ->
+                        builder.append(method.second).append(classSmaliPath).append("->")
+                                .append(method.first).append('\n')
                     }
                 } else {
                     throw IllegalStateException("not exist?")
@@ -110,26 +111,31 @@ class Main {
         }
 
         @Suppress("SpellCheckingInspection")
-        private fun findAndReplaceMethods(oldSmaliFile: File, newSmaliFile: File, methods: List<String>): String {
+        private fun findAndReplaceMethods(oldSmaliFile: File, newSmaliFile: File, methods: List<String>): List<Pair<String, String>> {
             var oldSmaliText = FileUtils.readFileToString(oldSmaliFile, StandardCharsets.UTF_8)
             val newSmaliText = FileUtils.readFileToString(newSmaliFile, StandardCharsets.UTF_8)
-            methods.forEach { method ->
-                val oldMethodSection = findMethodSection(oldSmaliText, method)
-                val newMethodSection = findMethodSection(newSmaliText, method)
-                if (oldMethodSection.isEmpty() || newMethodSection.isEmpty()) {
-                    throw RuntimeException("parse error")
-                } else {
+            val replacementResult = methods.map { method ->
+                try {
+                    val oldMethodSection = findMethodSection(oldSmaliText, method)
+                    val newMethodSection = findMethodSection(newSmaliText, method)
+                    if (oldMethodSection.isEmpty() || newMethodSection.isEmpty()) {
+                        throw RuntimeException("empty error")
+                    }
                     oldSmaliText = oldSmaliText.replaceFirst(oldMethodSection, newMethodSection)
+                    method to "ok    "
+                } catch (e: CodeReplacementException) {
+                    method to "error "
                 }
             }
-            return oldSmaliText
+            FileUtils.writeStringToFile(oldSmaliFile, oldSmaliText, StandardCharsets.UTF_8)
+            return replacementResult
         }
 
         @Suppress("SpellCheckingInspection")
         private fun findMethodSection(smali: String, method: String): String {
             val startOffset = smali.indexOf(".method $method")
             if (startOffset < 0) {
-                throw RuntimeException("parse error")
+                throw CodeReplacementException("cannot find method for replacement: $method")
             }
             val leftPart = smali.substring(startOffset)
             val endMethodStr = ".end method"
@@ -143,4 +149,6 @@ class Main {
             println("第${stepCount}步 -> $step")
         }
     }
+
+    class CodeReplacementException(message: String) : Exception(message)
 }

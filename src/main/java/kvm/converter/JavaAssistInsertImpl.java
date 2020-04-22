@@ -1,6 +1,6 @@
-package eggfly.kvm.converter;
+package kvm.converter;
 
-import eggfly.kvm.converter.util.ClassUtils;
+import kvm.converter.util.ClassUtils;
 import javassist.*;
 import javassist.bytecode.AccessFlag;
 import javassist.expr.*;
@@ -15,19 +15,26 @@ import java.util.zip.ZipOutputStream;
 
 public class JavaAssistInsertImpl {
 
-    private static String[] exceptPackageList = {"android", "androidx", "kotlin"};
+    private static String[] exceptPackageList = {"kotlin"};
+    private static String[] exceptClassList = {};
     private static final boolean isForceInsertLambda = false;
     private static final boolean isExceptMethodLevel = true;
-    private static String[] exceptMethodList = {"attachBaseContext"};
+    private static String[] exceptMethodList = {"attachBaseContext", "instantiateApplication"};
     private static final boolean isHotfixMethodLevel = false;
     private static String[] hotfixMethodList = {"test"};
     @SuppressWarnings("SpellCheckingInspection")
-    private static String[] hotfixPackageList = {"eggfly.kvm.demo"};
+    private static String[] hotfixPackageList = {"eggfly.kvm.demo", "androidx"};
 
     private static boolean isNeedInsertClass(String className) {
         //这样可以在需要埋点的剔除指定的类
         for (String exceptName : exceptPackageList) {
             if (className.startsWith(exceptName)) {
+                return false;
+            }
+        }
+
+        for (String exceptName : exceptClassList) {
+            if (Objects.equals(className, exceptName)) {
                 return false;
             }
         }
@@ -198,15 +205,6 @@ public class JavaAssistInsertImpl {
                 }
                 boolean addIncrementalChange = false;
                 for (CtBehavior ctBehavior : ctClass.getDeclaredBehaviors()) {
-//                    if (!addIncrementalChange) {
-//                        //insert the field
-//                        addIncrementalChange = true;
-//                        ClassPool classPool = ctBehavior.getDeclaringClass().getClassPool();
-//                        CtClass type = classPool.getOrNull(Constants.INTERFACE_NAME);
-//                        CtField ctField = new CtField(type, Constants.INSERT_FIELD_NAME, ctClass);
-//                        ctField.setModifiers(AccessFlag.PUBLIC | AccessFlag.STATIC);
-//                        ctClass.addField(ctField);
-//                    }
                     if (!isQualifiedMethod(ctBehavior)) {
                         continue;
                     }
@@ -225,13 +223,10 @@ public class JavaAssistInsertImpl {
                                 body += "argThis = $0;\n";
                             }
                             String parametersClassType = getParametersClassType(ctMethod);
-////                                body += "if (com.meituan.robust.PatchProxy.isSupport(\$args, argThis, ${Constants.INSERT_FIELD_NAME}, $isStatic, " + methodMap.get(ctBehavior.longName) + ",${parametersClassType},${returnTypeString}.class)) {"
-//                            body += "if (com.meituan.robust.PatchProxy.isSupport($args, argThis, " + Constants.INSERT_FIELD_NAME + ", " + isStatic +
-//                                    ", " + methodMap.get(ctBehavior.getLongName()) + "," + parametersClassType + "," + returnTypeString + ".class)) {";
                             body += JavaAssistCodeGen.INSTANCE.getInvokeAndReturnStatement(returnTypeString,
                                     ClassUtils.INSTANCE.convertCanonicalNameToSignature(ctClass.getName()),
                                     isStatic, ctMethod.getName(), parametersClassType);
-                            //finish the insert-code body ,let`s insert it
+                            // finish the insert-code body ,let`s insert it
                             body = "{\n" + body + "\n}";
                             ctBehavior.setBody(body);
                             modifiedMethods.add(getSmaliLine(ctMethod));
