@@ -1,5 +1,12 @@
 # kvm-apk-converter
 
+注意修改一下JavaAssistInsertImpl中的需要做代码替换的类或者函数，然后：
+```
+./gradlew jar
+java -jar build/libs/kvm-apk-converter.jar input.apk output.apk
+
+```
+
 ```flow
 st=>start: 输入origin.apk
 extract_origin_dex=>operation: 解压缩提取原始classes.dex保存为origin_classes.dex
