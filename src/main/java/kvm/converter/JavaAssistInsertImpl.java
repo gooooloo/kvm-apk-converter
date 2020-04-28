@@ -23,7 +23,12 @@ public class JavaAssistInsertImpl {
     private static final boolean isHotfixMethodLevel = false;
     private static String[] hotfixMethodList = {"test"};
     @SuppressWarnings("SpellCheckingInspection")
-    private static String[] hotfixPackageList = {"eggfly.kvm.demo", "androidx"};
+    private static final String[] hotfixPackageList = {
+            "eggfly.kvm.demo",
+            //  "androidx.arch.core.internal", //   ├─registers size: 2, values: [null, androidx.arch.core.internal.SafeIterableMap$IteratorWithAdditions@85459524]
+            "androidx.lifecycle",
+            // "androidx.appcompat.app" // NPE
+    };
 
     private static boolean isNeedInsertClass(String className) {
         //这样可以在需要埋点的剔除指定的类

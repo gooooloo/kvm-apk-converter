@@ -1,6 +1,14 @@
 plugins {
     id 'java'
+    id "application"
     id 'org.jetbrains.kotlin.jvm' version "1.3.10"
+}
+ext {
+    javaMainClass = "kvm.converter.Main"
+}
+
+application {
+    mainClassName = javaMainClass
 }
 
 group 'eggfly'

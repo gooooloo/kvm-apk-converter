@@ -18,6 +18,10 @@ class Main {
 
         @JvmStatic
         fun main(args: Array<String>) {
+            if (args.size != 2) {
+                System.err.println("Usage: ./gradlew run input.apk output.apk")
+                return
+            }
             val srcApk = args[0]
             val targetApk = args[1]
             runMain(File(srcApk), File(targetApk))
