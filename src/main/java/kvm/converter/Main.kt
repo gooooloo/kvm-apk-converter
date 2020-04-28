@@ -19,7 +19,7 @@ class Main {
         @JvmStatic
         fun main(args: Array<String>) {
             if (args.size != 2) {
-                System.err.println("Usage: ./gradlew run input.apk output.apk")
+                System.err.println("Usage: .java -jar kvm-apk-converter.jar input.apk output.apk")
                 return
             }
             val srcApk = args[0]

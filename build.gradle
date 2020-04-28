@@ -7,12 +7,31 @@ ext {
     javaMainClass = "kvm.converter.Main"
 }
 
+jar {
+    manifest {
+        attributes(
+                "Main-Class": javaMainClass
+        )
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+task runWithExecJarExecutable(type: Exec) {
+    dependsOn jar
+    group = "Execution"
+    description = "Run the output executable jar with ExecTask"
+    commandLine "java", "-jar", jar.archiveFile.get()
+}
+
 application {
     mainClassName = javaMainClass
 }
 
 group 'eggfly'
-version '1.0-SNAPSHOT'
+// version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
 
@@ -33,7 +52,7 @@ dependencies {
     compile group: 'commons-io', name: 'commons-io', version: '2.6'
     compile group: 'com.android.tools', name: 'sdklib', version: '25.3.0'
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    compile "org.jetbrains.kotlin:kotlin-stdlib"
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
 
